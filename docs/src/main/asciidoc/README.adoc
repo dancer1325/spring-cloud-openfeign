@@ -4,7 +4,11 @@ image::https://github.com/spring-cloud/spring-cloud-openfeign/workflows/Build/ba
 [[features]]
 == Features
 
-* Declarative REST Client: Feign creates a dynamic implementation of an interface decorated with JAX-RS or Spring MVC annotations
+* Declarative REST Client
+    ** dynamic implementation of an interface /
+        *** decorated with annotations
+            **** JAX-RS or
+            **** Spring MVC
 
 [[building]]
 == Building
