@@ -4,22 +4,26 @@
 [[spring-cloud-feign]]
 == Declarative REST Client: Feign
 
-https://github.com/OpenFeign/feign[Feign] is a declarative web service client.
-It makes writing web service clients easier.
-To use Feign create an interface and annotate it.
-It has pluggable annotation support including Feign annotations and JAX-RS annotations.
-Feign also supports pluggable encoders and decoders.
-Spring Cloud adds support for Spring MVC annotations and for using the same `HttpMessageConverters` used by default in Spring Web.
-Spring Cloud integrates Eureka, Spring Cloud CircuitBreaker, as well as Spring Cloud LoadBalancer to provide a load-balanced http client when using Feign.
+* https://github.com/OpenFeign/feign[Feign]
+	** declarative web service client
+	** how to use it?
+		*** create an interface
+		*** annotate it with
+			**** Feign annotations
+			**** JAX-RS annotations
+	** supports
+		*** pluggable encoders & decoders
+		*** Spring MVC annotations
+		*** `HttpMessageConverters` / -- used by default -- | Spring Web
+		*** ALL the features available for the  https://docs.spring.io/spring-cloud-commons/docs/current/reference/html/#spring-cloud-loadbalancer[blocking mode of Spring Cloud LoadBalancer]
+* Spring Cloud -- integrates -- Eureka, Spring Cloud CircuitBreaker & Spring Cloud LoadBalancer
+	** -> if you use Feign -- provide a -- load-balanced http client
 
 [[netflix-feign-starter]]
 === How to Include Feign
 
-To include Feign in your project use the starter with group `org.springframework.cloud`
-and artifact id `spring-cloud-starter-openfeign`. See the https://projects.spring.io/spring-cloud/[Spring Cloud Project page]
-for details on setting up your build system with the current Spring Cloud Release Train.
-
-Example spring boot app
+* use `org.springframework.cloud:spring-cloud-starter-openfeign`
+	** check https://projects.spring.io/spring-cloud/[Spring Cloud Project page]
 
 [source,java,indent=0]
 ----
@@ -54,33 +58,29 @@ public interface StoreClient {
 }
 ----
 
-In the `@FeignClient` annotation the String value ("stores" above) is an arbitrary client name, which is used to create a https://github.com/spring-cloud/spring-cloud-commons/blob/main/spring-cloud-loadbalancer/src/main/java/org/springframework/cloud/loadbalancer/blocking/client/BlockingLoadBalancerClient.java[Spring Cloud LoadBalancer client].
-You can also specify a URL using the `url` attribute
-(absolute value or just a hostname). The name of the bean in the
-application context is the fully qualified name of the interface.
-To specify your own alias value you can use the `qualifiers` value
-of the `@FeignClient` annotation.
-
-The load-balancer client above will want to discover the physical addresses
-for the "stores" service. If your application is a Eureka client then
-it will resolve the service in the Eureka service registry. If you
-don't want to use Eureka, you can configure a list of servers
-in your external configuration using https://docs.spring.io/spring-cloud-commons/docs/current/reference/html/#simplediscoveryclient[`SimpleDiscoveryClient`].
-
-Spring Cloud OpenFeign supports all the features available for the blocking mode of Spring Cloud LoadBalancer. You can read more about them in the https://docs.spring.io/spring-cloud-commons/docs/current/reference/html/#spring-cloud-loadbalancer[project documentation].
-
-TIP: To use `@EnableFeignClients` annotation on `@Configuration`-annotated-classes, make sure to specify where the clients are located, for example:
-`@EnableFeignClients(basePackages = "com.example.clients")`
-or list them explicitly:
-`@EnableFeignClients(clients = InventoryServiceFeignClient.class)`.
-
-In order to load Spring Feign client beans in a multi-module setup, you need to specify the packages directly.
-
-WARNING: Since `FactoryBean` objects may be instantiated before the initial context refresh should take place, and the instantiation of Spring Cloud OpenFeign Clients triggers a context refresh, they should not be declared within `FactoryBean` classes.
+* `@FeignClient(value, url, qualifiers)`
+	** annotation /
+		*** `String value`
+			**** arbitrary client name
+			**** -- used to create a -- https://github.com/spring-cloud/spring-cloud-commons/blob/main/spring-cloud-loadbalancer/src/main/java/org/springframework/cloud/loadbalancer/blocking/client/BlockingLoadBalancerClient.java[Spring Cloud LoadBalancer client]
+		*** `url`
+			**** absolute value or
+			**** hostname
+		*** `qualifiers`
+			**** -- used to specify -- your own alias value
+	** name of the bean | application context == fully qualified name of the interface
+* if you want to configure a list of servers | your external configuration -> use https://docs.spring.io/spring-cloud-commons/docs/current/reference/html/#simplediscoveryclient[`SimpleDiscoveryClient`]
+* if you want to use `@EnableFeignClients` | `@Configuration`-annotated-classes -> specify where to locate the clients
+	** `@EnableFeignClients(basePackages = "pacakageToFindIt")`
+	** `@EnableFeignClients(clients = ListTheClients)`
+* if you want to load Spring Feign client beans | multi-module setup -> specify the packages directly
+* Spring Cloud OpenFeign Clients -- should NOT be declared -- | `FactoryBean` classes
+	** Reason: 🧠`FactoryBean` objects -- may be instantiated -- before initial context refresh take place & instantiation of Spring Cloud OpenFeign Clients triggers a context refresh 🧠
 
 [[attribute-resolution-mode]]
 ==== Attribute resolution mode
 
+* TODO:
 While creating `Feign` client beans, we resolve the values passed via the `@FeignClient` annotation. As of `4.x`, the values are being resolved eagerly. This is a good solution for most use-cases, and it also allows for AOT support.
 
 If you need the attributes to be resolved lazily, set the `spring.cloud.openfeign.lazy-attributes-resolution` property value to `true`.
