@@ -368,9 +368,8 @@ You can do this by overriding calling `inheritParentContext(false)` on the `Buil
 [[spring-cloud-feign-circuitbreaker]]
 === Feign Spring Cloud CircuitBreaker Support
 
-If Spring Cloud CircuitBreaker is on the classpath and `spring.cloud.openfeign.circuitbreaker.enabled=true`, Feign will wrap all methods with a circuit breaker.
-
-To disable Spring Cloud CircuitBreaker support on a per-client basis create a vanilla `Feign.Builder` with the "prototype" scope, e.g.:
+* if Spring Cloud CircuitBreaker | classpath & `spring.cloud.openfeign.circuitbreaker.enabled=true` -> Feign wrap ALL methods -- via -- circuit breaker
+	** if you want to disable Spring Cloud CircuitBreaker | 1! specific client -> create a vanilla `Feign.Builder` / scope = "prototype"
 
 [source,java,indent=0]
 ----
@@ -384,12 +383,12 @@ public class FooConfiguration {
 }
 ----
 
-The circuit breaker name follows this pattern `<feignClientClassName>#<calledMethod>(<parameterTypes>)`. When calling a `@FeignClient` with `FooClient` interface and the called interface method that has no parameters is `bar` then the circuit breaker name will be `FooClient#bar()`.
+* circuit breaker name pattern
+	** v2020.0.2+  `<feignClientClassName>#<calledMethod>(<parameterTypes>)`
+		*** `(<parameterTypes>)`		optional
+	** v2020.0.2-  `<feignClientName>_<calledMethod>`
+	** if you provide a bean of `CircuitBreakerNameResolver` -> you can change the circuit breaker name pattern
 
-NOTE: As of 2020.0.2, the circuit breaker name pattern has changed from `<feignClientName>_<calledMethod>`.
-Using `CircuitBreakerNameResolver` introduced in 2020.0.4, circuit breaker names can retain the old pattern.
-
-Providing a bean of `CircuitBreakerNameResolver`, you can change the circuit breaker name pattern.
 [source,java,indent=0]
 ----
 @Configuration
@@ -401,7 +400,8 @@ public class FooConfiguration {
 }
 ----
 
-To enable Spring Cloud CircuitBreaker group set the `spring.cloud.openfeign.circuitbreaker.group.enabled` property to `true` (by default `false`).
+* `spring.cloud.openfeign.circuitbreaker.group.enabled`
+	** enable Spring Cloud CircuitBreaker group
 
 [[spring-clou-feign-circuitbreaker-configurationproperties]]
 === Configuring CircuitBreakers With Configuration Properties
