@@ -90,32 +90,34 @@ TIP: For Spring Cloud Contract test integration, lazy attribute resolution shoul
 [[spring-cloud-feign-overriding-defaults]]
 === Overriding Feign Defaults
 
-A central concept in Spring Cloud's Feign support is that of the named client. Each feign client is part of an ensemble of components that work together to contact a remote server on demand, and the ensemble has a name that you give it as an application developer using the `@FeignClient` annotation. Spring Cloud creates a new ensemble as an
-`ApplicationContext` on demand for each named client using `FeignClientsConfiguration`. This contains (amongst other things) an `feign.Decoder`, a `feign.Encoder`, and a `feign.Contract`.
-It is possible to override the name of that ensemble by using the `contextId`
-attribute of the `@FeignClient` annotation.
-
-Spring Cloud lets you take full control of the feign client by declaring additional configuration (on top of the `FeignClientsConfiguration`) using `@FeignClient`. Example:
+* ensemble of components
+	** == feign client + `feign.Decoder` + `feign.Encoder` + `feign.Contract` + ...
+	** ALL components work together -- to contact a -- remote server on demand
+	** `@FeignClient. contextId`
+		*** overrides the
+			**** ensemble name
+			**** alias of the client name
+		*** uses
+			**** configuration bean name / created / that client
+	** 👁️ways to create new ensembles 👁️
+		*** `FeignClientsConfiguration`
+			**** Spring Cloud creates it on demand / named client
+		*** `@FeignClient(configuration=...)`
+			**** additional configuration | `FeignClientsConfiguration`
+			**** NOT need to be annotated with `@Configuration`
+				***** if you annotate it -> exclude it from `@ComponentScan`
+					****** Reason: 🧠it would become default source for `feign.Decoder`, `feign.Encoder`, `feign.Contract` 🧠
 
 [source,java,indent=0]
 ----
 @FeignClient(name = "stores", configuration = FooConfiguration.class)
+// -> client == components | `FeignClientsConfiguration` + components | `FooConfiguration`
 public interface StoreClient {
 	//..
 }
 ----
 
-In this case the client is composed from the components already in `FeignClientsConfiguration` together with any in `FooConfiguration` (where the latter will override the former).
-
-NOTE: `FooConfiguration` does not need to be annotated with `@Configuration`. However, if it is, then take care to exclude it from any `@ComponentScan` that would otherwise include this configuration as it will become the default source for `feign.Decoder`, `feign.Encoder`, `feign.Contract`, etc., when specified. This can be avoided by putting it in a separate, non-overlapping package from any `@ComponentScan` or `@SpringBootApplication`, or it can be explicitly excluded in `@ComponentScan`.
-
-NOTE: Using `contextId` attribute of the `@FeignClient` annotation in addition to changing the name of
-the `ApplicationContext` ensemble, it will override the alias of the client name
-and it will be used as part of the name of the configuration bean created for that client.
-
-WARNING: Previously, using the `url` attribute, did not require the `name` attribute. Using `name` is now required.
-
-Placeholders are supported in the `name` and `url` attributes.
+* if you specify now (?) `@FeignClient.url=` -> `@FeignClient.name=` is required
 
 [source,java,indent=0]
 ----
@@ -125,17 +127,17 @@ public interface StoreClient {
 }
 ----
 
-Spring Cloud OpenFeign provides the following beans by default for feign (`BeanType` beanName: `ClassName`):
-
-* `Decoder` feignDecoder: `ResponseEntityDecoder` (which wraps a `SpringDecoder`)
-* `Encoder` feignEncoder: `SpringEncoder`
-* `Logger` feignLogger: `Slf4jLogger`
-* `MicrometerObservationCapability` micrometerObservationCapability: If `feign-micrometer` is on the classpath and `ObservationRegistry` is available
-* `MicrometerCapability` micrometerCapability: If `feign-micrometer` is on the classpath, `MeterRegistry` is available and `ObservationRegistry` is not available
-* `CachingCapability` cachingCapability: If `@EnableCaching` annotation is used. Can be disabled via `spring.cloud.openfeign.cache.enabled`.
-* `Contract` feignContract: `SpringMvcContract`
-* `Feign.Builder` feignBuilder: `FeignCircuitBreaker.Builder`
-* `Client` feignClient: If Spring Cloud LoadBalancer is on the classpath, `FeignBlockingLoadBalancerClient` is used.
+* 👁️Spring Cloud OpenFeign -- provides, by default, the -- beans for feign (`BeanType` beanName: `ClassName`) 👁️
+	** `Decoder` feignDecoder: `ResponseEntityDecoder`
+	** `Encoder` feignEncoder: `SpringEncoder`
+	** `Logger` feignLogger: `Slf4jLogger`
+	** `MicrometerObservationCapability` micrometerObservationCapability:  requires `feign-micrometer` | classpath & `ObservationRegistry` is available
+	** `MicrometerCapability` micrometerCapability: requires `feign-micrometer` | classpath & `MeterRegistry` is available and `ObservationRegistry` is NOT available
+	** `CachingCapability` cachingCapability: requires `@EnableCaching`
+		*** `spring.cloud.openfeign.cache.enabled` to enable or disable
+	** `Contract` feignContract: `SpringMvcContract`
+	** `Feign.Builder` feignBuilder: `FeignCircuitBreaker.Builder`
+	** `Client` feignClient: If Spring Cloud LoadBalancer is on the classpath, `FeignBlockingLoadBalancerClient` is used.
 If none of them is on the classpath, the default feign client is used.
 
 NOTE: `spring-cloud-starter-openfeign` supports `spring-cloud-starter-loadbalancer`. However, as is an optional dependency, you need to make sure it has been added to your project if you want to use it.
@@ -150,77 +152,82 @@ If you can not configure Apache HttpClient 5 by using properties, there is an `H
 
 TIP: Starting with Spring Cloud OpenFeign 4, the Feign Apache HttpClient 4 is no longer supported. We suggest using Apache HttpClient 5 instead.
 
-Spring Cloud OpenFeign _does not_ provide the following beans by default for feign, but still looks up beans of these types from the application context to create the feign client:
+* 👁️Spring Cloud OpenFeign -- does NOT provide, BUT still looks up beans of these types | application context to -- create the feign client 👁️
+	** `Logger.Level`
+	** `Retryer`
+		*** `Retryer.NEVER_RETRY`
+			**** created by default
+			**** disable retrying
+			**** != "feign.Retryer.NEVER_RETRY"
+	** `ErrorDecoder`
+	** `Request.Options`
+	** `Collection<RequestInterceptor>`
+	** `SetterFactory`
+	** `QueryMapEncoder`
+	** `Capability` (`MicrometerObservationCapability` and `CachingCapability` are provided by default)
+* 👁️way to override the default beans 👁️
+	** create a bean of one of those type | `@FeignClient` configuration
 
-* `Logger.Level`
-* `Retryer`
-* `ErrorDecoder`
-* `Request.Options`
-* `Collection<RequestInterceptor>`
-* `SetterFactory`
-* `QueryMapEncoder`
-* `Capability` (`MicrometerObservationCapability` and `CachingCapability` are provided by default)
-
-A bean of `Retryer.NEVER_RETRY` with the type `Retryer` is created by default, which will disable retrying.
-Notice this retrying behavior is different from the Feign default one, where it will automatically retry IOExceptions,
-treating them as transient network related exceptions, and any RetryableException thrown from an ErrorDecoder.
-
-Creating a bean of one of those type and placing it in a `@FeignClient` configuration (such as `FooConfiguration` above) allows you to override each one of the beans described.  Example:
-
-[source,java,indent=0]
-----
-@Configuration
-public class FooConfiguration {
-	@Bean
-	public Contract feignContract() {
-		return new feign.Contract.Default();
+	[source,java,indent=0]
+	----
+	@Configuration
+	public class FooConfiguration {
+		// replace the default `SpringMvcContract`	by `feign.Contract.Default`
+		@Bean
+		public Contract feignContract() {
+			return new feign.Contract.Default();
+		}
+		// add a `RequestInterceptor` | collection of `RequestInterceptor`
+		@Bean
+		public BasicAuthRequestInterceptor basicAuthRequestInterceptor() {
+			return new BasicAuthRequestInterceptor("user", "password");
+		}
 	}
+	----
 
-	@Bean
-	public BasicAuthRequestInterceptor basicAuthRequestInterceptor() {
-		return new BasicAuthRequestInterceptor("user", "password");
-	}
-}
-----
 
-This replaces the `SpringMvcContract` with `feign.Contract.Default` and adds a `RequestInterceptor` to the collection of `RequestInterceptor`.
+	** `spring.cloud.openfeign.client.config.feignNameOrFeignValueOrFeignServiceId`
+		*** configure `@FeignClient` 's configuration properties
+		*** `feignNameOrFeignValueOrFeignServiceId` -- depends on the -- context / retrieve the instances
+		*** `.retryer` & `.decoder`  == classes / must have
+			**** bean | Spring context or
+			**** default constructor
 
-`@FeignClient` also can be configured using configuration properties.
+	application.yml
+	[source,yaml]
+	----
+	spring:
+		cloud:
+			openfeign:
+				client:
+					config:
+						feignName:
+							url: http://remote-service.com
+							connectTimeout: 5000
+							readTimeout: 5000
+							loggerLevel: full
+							errorDecoder: com.example.SimpleErrorDecoder
+							retryer: com.example.SimpleRetryer
+							defaultQueryParameters:
+								query: queryValue
+							defaultRequestHeaders:
+								header: headerValue
+							requestInterceptors:
+								- com.example.FooRequestInterceptor
+								- com.example.BarRequestInterceptor
+							responseInterceptor: com.example.BazResponseInterceptor
+							dismiss404: false
+							encoder: com.example.SimpleEncoder
+							decoder: com.example.SimpleDecoder
+							contract: com.example.SimpleContract
+							capabilities:
+								- com.example.FooCapability
+								- com.example.BarCapability
+							queryMapEncoder: com.example.SimpleQueryMapEncoder
+							micrometer.enabled: false
+	----
 
-application.yml
-[source,yaml]
-----
-spring:
-	cloud:
-		openfeign:
-			client:
-				config:
-					feignName:
-                        url: http://remote-service.com
-						connectTimeout: 5000
-						readTimeout: 5000
-						loggerLevel: full
-						errorDecoder: com.example.SimpleErrorDecoder
-						retryer: com.example.SimpleRetryer
-						defaultQueryParameters:
-							query: queryValue
-						defaultRequestHeaders:
-							header: headerValue
-						requestInterceptors:
-							- com.example.FooRequestInterceptor
-							- com.example.BarRequestInterceptor
-						responseInterceptor: com.example.BazResponseInterceptor
-						dismiss404: false
-						encoder: com.example.SimpleEncoder
-						decoder: com.example.SimpleDecoder
-						contract: com.example.SimpleContract
-						capabilities:
-							- com.example.FooCapability
-							- com.example.BarCapability
-						queryMapEncoder: com.example.SimpleQueryMapEncoder
-						micrometer.enabled: false
-----
-`feignName` in this example refers to `@FeignClient` `value`, that is also aliased with `@FeignClient` `name` and `@FeignClient` `contextId`. In a load-balanced scenario, it also corresponds to the `serviceId` of the server app that will be used to retrieve the instances. The specified classes for decoders, retryer and other ones must have a bean in the Spring context or have a default constructor.
+
 
 
 Default configurations can be specified in the `@EnableFeignClients` attribute `defaultConfiguration` in a similar manner as described above. The difference is that this configuration will apply to _all_ feign clients.
@@ -692,19 +699,20 @@ public class FooConfiguration {
 [[feign-caching]]
 === Feign Caching
 
-If `@EnableCaching` annotation is used, a `CachingCapability` bean is created and registered so that your Feign client recognizes `@Cache*` annotations on its interface:
+* if you use `@EnableCaching` -> `CachingCapability` bean is created & registered
+	** `spring.cloud.openfeign.cache.enabled=false`
+		*** to disable it
+	** -> Feign client recognizes `@Cache*` | its interface
 
 [source,java,indent=0]
 ----
 public interface DemoClient {
 
 	@GetMapping("/demo/{filterParam}")
-    @Cacheable(cacheNames = "demo-cache", key = "#keyParam")
+    @Cacheable(cacheNames = "demo-cache", key = "#keyParam")	// annotation recognized
 	String demoEndpoint(String keyParam, @PathVariable String filterParam);
 }
 ----
-
-You can also disable the feature via property `spring.cloud.openfeign.cache.enabled=false`.
 
 
 [[spring-requestmapping-support]]
