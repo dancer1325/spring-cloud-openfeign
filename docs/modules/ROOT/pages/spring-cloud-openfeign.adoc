@@ -718,31 +718,22 @@ public interface DemoClient {
 [[spring-requestmapping-support]]
 === Spring @RequestMapping Support
 
-Spring Cloud OpenFeign provides support for the Spring `@RequestMapping` annotation and its derived annotations (such as `@GetMapping`, `@PostMapping`, and others) support.
-The attributes on the `@RequestMapping` annotation (including `value`, `method`, `params`, `headers`, `consumes`, and `produces`) are parsed by `SpringMvcContract` as the content of the request.
-
-
-Consider the following example:
-
-Define an interface using the `params` attribute.
+* Spring Cloud OpenFeign -- provides support for -- Spring `@RequestMapping` annotation + derived annotations (`@GetMapping`, `@PostMapping`)
+	** `@RequestMapping`'s attributes (`value`, `method`, `params`, `headers`, `consumes`, and `produces`) -- are parsed by `SpringMvcContract` as -- content of the request
+		*** `params`
+			**** multiple key/ values accept -- `params = { "key1=v1", "key2=v2" }` --
+			**** 1! accept -- `params = "key"` --
 
 [source,java,indent=0]
 ----
 @FeignClient("demo")
 public interface DemoTemplate {
 
+    	// url == `/stores/storeId?mode=upsert`
         @PostMapping(value = "/stores/{storeId}", params = "mode=upsert")
         Store update(@PathVariable("storeId") Long storeId, Store store);
 }
 ----
-
-In the above example, the request url is resolved to `/stores/storeId?mode=upsert`. +
-The params attribute also supports the use of multiple `key=value` or only one `key`: +
-
-- When `params = { "key1=v1", "key2=v2" }`, the request url is parsed as `/stores/storeId?key1=v1&key2=v2`.
-- When `params = "key"`, the request url is parsed as `/stores/storeId?key`.
-
-
 
 [[feign-querymap-support]]
 === Feign @QueryMap support
