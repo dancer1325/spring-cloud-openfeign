@@ -137,8 +137,7 @@ public interface StoreClient {
 		*** `spring.cloud.openfeign.cache.enabled` to enable or disable
 	** `Contract` feignContract: `SpringMvcContract`
 	** `Feign.Builder` feignBuilder: `FeignCircuitBreaker.Builder`
-	** `Client` feignClient: If Spring Cloud LoadBalancer is on the classpath, `FeignBlockingLoadBalancerClient` is used.
-If none of them is on the classpath, the default feign client is used.
+	** `Client` feignClient: if Spring Cloud LoadBalancer | classpath & `FeignBlockingLoadBalancerClient` is used
 
 NOTE: `spring-cloud-starter-openfeign` supports `spring-cloud-starter-loadbalancer`. However, as is an optional dependency, you need to make sure it has been added to your project if you want to use it.
 
@@ -317,15 +316,16 @@ NOTE: In case the server is not running or available a packet results in _connec
 [[creating-feign-clients-manually]]
 === Creating Feign Clients Manually
 
-In some cases it might be necessary to customize your Feign Clients in a way that is not
-possible using the methods above.  In this case you can create Clients using the
-https://github.com/OpenFeign/feign/#basics[Feign Builder API]. Below is an example
-which creates two Feign Clients with the same interface but configures each one with
-a separate request interceptor.
+* ways
+	** -- via -- https://github.com/OpenFeign/feign/#basics[Feign Builder API]
+* uses
+	** previous ways / NOT possible
+* _Example:_ 2 Feign Clients / SAME interface, BUT separate request interceptor.
 
 [source,java,indent=0]
 ----
-@Import(FeignClientsConfiguration.class)
+@Import(FeignClientsConfiguration.class)		// Import ALL the beans
+// `FeignClientsConfiguration.class` == default configuration / -- provided by -- Spring Cloud OpenFeign
 class FooController {
 
 	private FooClient fooClient;
@@ -339,31 +339,24 @@ class FooController {
 				.decoder(decoder)
 				.contract(contract)
 				.addCapability(micrometerObservationCapability)
-				.requestInterceptor(new BasicAuthRequestInterceptor("user", "user"))
+				.requestInterceptor(new BasicAuthRequestInterceptor("user", "user"))		// first request interceptor
 				.target(FooClient.class, "https://PROD-SVC");
+        		// `PROD-SVC` == name of the service / Clients -- will be making requests -- to
 
 		this.adminClient = Feign.builder().client(client)
 				.encoder(encoder)
 				.decoder(decoder)
 				.contract(contract)
 				.addCapability(micrometerObservationCapability)
-				.requestInterceptor(new BasicAuthRequestInterceptor("admin", "admin"))
+				.requestInterceptor(new BasicAuthRequestInterceptor("admin", "admin"))		// second request interceptor
 				.target(FooClient.class, "https://PROD-SVC");
 	}
 }
 ----
 
-NOTE: In the above example `FeignClientsConfiguration.class` is the default configuration
-provided by Spring Cloud OpenFeign.
-
-NOTE: `PROD-SVC` is the name of the service the Clients will be making requests to.
-
-NOTE: The Feign `Contract` object defines what annotations and values are valid on interfaces. The
-autowired `Contract` bean provides supports for SpringMVC annotations, instead of
-the default Feign native annotations.
-
-You can also use the `Builder`to configure FeignClient not to inherit beans from the parent context.
-You can do this by overriding calling `inheritParentContext(false)` on the `Builder`.
+* `.inheritParentContext(false)`
+	** allows
+		*** NOT inheriting beans -- from the -- parent context
 
 [[spring-cloud-feign-circuitbreaker]]
 === Feign Spring Cloud CircuitBreaker Support
