@@ -306,12 +306,23 @@ You can modify this behaviour to derive the charset from the `Content-Type` head
 [[timeout-handling]]
 === Timeout Handling
 
-We can configure timeouts on both the default and the named client. OpenFeign works with two timeout parameters:
+* timeouts
+	** can be configured |
+		*** default client &
+		*** named client
+	** timeout parameters
+		*** `connectTimeout`
+			**** prevents blocking the caller
+			**** DNS lookup timing is part of it
+		*** `readTimeout`
+			**** [time of connection establishment, time of connection establishment + `readTimeout`]
+			**** returning the response -- takes -- too long
 
-- `connectTimeout` prevents blocking the caller due to the long server processing time.
-- `readTimeout` is applied from the time of connection establishment and is triggered when returning the response takes too long.
-
-NOTE: In case the server is not running or available a packet results in _connection refused_. The communication ends either with an error message or in a fallback. This can happen _before_ the `connectTimeout` if it is set very low. The time taken to perform a lookup and to receive such a packet causes a significant part of this delay. It is subject to change based on the remote host that involves a DNS lookup.
+* if server is NOT running or available -> packet results in _connection refused_
+	** -> communication ends either
+		*** error message or
+		*** fallback
+	** can happen _BEFORE_ the `connectTimeout`
 
 [[creating-feign-clients-manually]]
 === Creating Feign Clients Manually
